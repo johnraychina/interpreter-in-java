@@ -1,0 +1,37 @@
+1、下单，使用quota_type = 18；
+冻结了compaign子额度
+
+2、冻结117150：
+2025-01-25 13:38:50.643326 21be659bde7c3a5a723a96d18cf09639 [INFO] rpc_log_wrapper.go:48:1 Service Call Request: {10.98.87.108:15000:CreditCoreAccountQuotaService.FrozeUserQuota:{"user_id":1831182,"account_id":10866721366125820,"biz_type":3,"platform_user_id":"","platform_type":0,"related_biz_id":"12170118174805181951","src_system":3,"src_biz_code":"CommitPayment","quota_type_amount_info":{"quota_type":2,"amount":"117150"},"biz_time":1737787127,"transaction_type":0,"od_status":0,"od_amount":"0"}}
+2025-01-25 13:38:50.656906 21be659bde7c3a5a723a96d18cf09639 [INFO] rpc_log_wrapper.go:77:1 Service Call Response: {CreditCoreAccountQuotaService.FrozeUserQuota}, Response:{"common_result":{"code":0,"msg":"success"},"actual_od_amount":"0"}, TookTime: 13.572332ms
+quota_type=2,对应sub_quota_type=[3,5,2,1,4]
+
+
+3、展期：解冻{"quota_type":1,"amount":"30189"}，冻结{"quota_type":2,"amount":"30189"}
+2025-01-24 23:11:50.982013	073f8279ee6a2efe0932e4a2f1b90146	[INFO]	rpc_log_wrapper.go:120:1	Service Called Request: {serviceName:CreditCoreAccountQuotaService.UnFrozeAndFrozeUserQuota, clientHost:10.98.76.163, clientService:spl.disburse.service, req:{"user_id":1831182,"account_id":10866721366125820,"biz_type":3,"platform_user_id":"","platform_type":0,"related_biz_id":"1994102610361082930","src_system":3,"src_biz_code":"RestoreAndFreezeQuota","unfrozen_quota_type_amount_info":{"quota_type":1,"amount":"30189"},"biz_time":1737735111,"freeze_biz_id":"1829122126427727003","frozen_quota_type_amount_info":{"quota_type":2,"amount":"30189"},"transaction_type":0}}
+quota_type=1, 对应sub_quota_type=[5,2,1,4]
+quota_type=2, 对应sub_quota_type=[3,5,2,1,4]
+
+4、转已用：{"quota_type":2,"amount":"117150"},
+2025-01-26 20:00:00.158514	0ec7568edb0802706ed1d9496d45807f	[INFO]	rpc_log_wrapper.go:120:1	Service Called Request: {serviceName:CreditCoreAccountQuotaService.UserQuotaFrozenToUsed, clientHost:10.98.72.112, clientService:spl.disburse.service, req:{"user_id":1831182,"account_id":10866721366125820,"platform_user_id":"","platform_type":0,"biz_type":3,"freeze_biz_id":"12170118174805181951","related_biz_id":"1994320779881242671","src_system":3,"src_biz_code":"ConfirmPayment","quota_type_amount_info":{"quota_type":2,"amount":"117150"},"biz_time":1737818727}}
+quota_type=2,对应sub_quota_type=[3,5,2,1,4]
+
+related_biz_id='1993988970396017682' 使用了install子额度，使得frozen_amount: 117150 -> 86961
+
+
+freeze_biz_id='1829122126427727003'
+related_biz_id='1829122126427727003'
+trace1:073f8279ee6a2efe0932e4a2f1b90146
+trace2:3b1f6777f99ad38f3cade315063dc4f7 skip了campaign子额度使用了子额度2
+2025-01-25 22:25:18.978236	3b1f6777f99ad38f3cade315063dc4f7	[INFO]	operate_service_impl.go:869:func1	sub quota is not belong quota type, skip this sub_quota, quotaType=2, subQuotaType=8, subQuotaNo: 1922086462608737303
+
+
+---------------
+
+1、下单支付的时候冻结了Campagin bnpl临时额度（quota_type = 18） 
+
+2、执行了确认收货前展期，解冻了普通bnpl额度（quota_type=1），冻结了install 分期额度（quota_type=2）
+
+
+3、确认收货使用了install 分期额度（quota_type=2）放款成功，但是调用core使用额度失败
+
