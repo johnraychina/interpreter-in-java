@@ -1,5 +1,6 @@
 package com.craftinginterpreters.lox;
 
+import java.util.ArrayList;
 import java.util.List;
 import static com.craftinginterpreters.lox.TokenType.*;
 
@@ -16,6 +17,15 @@ import static com.craftinginterpreters.lox.TokenType.*;
 //                | primary ;
 // primary        → NUMBER | STRING | "true" | "false" | "nil"
 //                | "(" expression ")" ;
+
+// program        → statement* EOF ;
+
+// statement      → exprStmt
+//                | printStmt ;
+
+// exprStmt       → expression ";" ;
+// printStmt      → "print" expression ";" ;
+
 public class Parser {
 
     private static class ParseError extends RuntimeException {
@@ -28,12 +38,32 @@ public class Parser {
         this.tokens = tokens;
     }
 
-    Expr parse() {
-        try {
-            return expression();
-        } catch (ParseError e) {
-            return null;
+    List<Stmt> parse() {
+        List<Stmt> statements = new ArrayList<>();
+        while (!isAtEnd()) {
+            statements.add(statement());
         }
+
+        return statements;
+    }
+
+    private Stmt statement() {
+        if (match(PRINT)) {
+            return printStatement();
+        }
+        return expressionStatement();
+    }
+
+    private Stmt printStatement() {
+        Expr val = expression();
+        consume(SEMICOLON, "Expect ';' after value.");
+        return new Stmt.Print(val);
+    }
+
+    private Stmt expressionStatement() {
+        Expr val = expression();
+        consume(SEMICOLON, "Expect ';' after value.");
+        return new Stmt.Expression(val);
     }
 
     private Expr expression() {
@@ -173,8 +203,9 @@ public class Parser {
 
         while (!isAtEnd()) {
 
-            if (previous().type == SEMICOLON) return;
-            
+            if (previous().type == SEMICOLON)
+                return;
+
             switch (peek().type) {
                 case CLASS:
                 case FUN:
@@ -184,12 +215,11 @@ public class Parser {
                 case WHILE:
                 case PRINT:
                 case RETURN:
-                  return;
+                    return;
             }
 
             advance();
         }
     }
-
 
 }
