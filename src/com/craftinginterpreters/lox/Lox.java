@@ -41,13 +41,12 @@ public class Lox {
 
         // try to parse tokens into AST Expr
         Parser parser = new Parser(tokens);
-        Expr expression = parser.parse();
+        List<Stmt> statements = parser.parse();
         
         // stop on syntax error
         if (hadError) return;
         
-        System.out.println(new AstPrinter().print(expression));
-        interpreter.interpret(expression);
+        interpreter.interpret(statements);
     }
 
 

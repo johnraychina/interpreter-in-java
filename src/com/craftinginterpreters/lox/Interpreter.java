@@ -1,20 +1,27 @@
 package com.craftinginterpreters.lox;
 
+import java.util.List;
+
 import com.craftinginterpreters.lox.Expr.Binary;
 import com.craftinginterpreters.lox.Expr.Grouping;
 import com.craftinginterpreters.lox.Expr.Literal;
 import com.craftinginterpreters.lox.Expr.Unary;
 import com.craftinginterpreters.lox.Expr.Visitor;
 
-public class Interpreter implements Visitor<Object> {
+public class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
 
-    void interpret(Expr expression) {
+    void interpret(List<Stmt> statements) {
         try {
-            Object result = evaluate(expression);
-            System.out.println(stringify(result));
+            for (Stmt statement : statements) {
+                execute(statement);
+            }
         } catch (RuntimeError e) {
             Lox.runtimeError(e);
         }
+    }
+
+    private void execute(Stmt stmt) {
+        stmt.accept(this);
     }
 
     private String stringify(Object object) {
@@ -37,8 +44,8 @@ public class Interpreter implements Visitor<Object> {
         return evaluate(expr.expression);
     }
 
-    private Object evaluate(Expr expr) {
-        return expr.accept(this);
+    private Object evaluate(Stmt stmt) {
+        return stmt.accept(this);
     }
 
     @Override
@@ -100,7 +107,7 @@ public class Interpreter implements Visitor<Object> {
                 } else if (left instanceof String && right instanceof String) {
                     return (String) left + (String) right;
                 }
-                throw new RuntimeError(expr.operator,"Operands must be two numbers or two strings.");
+                throw new RuntimeError(expr.operator, "Operands must be two numbers or two strings.");
                 break;
             case SLASH:
                 checkNumberOperands(expr.operator, left, right);
@@ -123,15 +130,29 @@ public class Interpreter implements Visitor<Object> {
         return a.equals(b);
     }
 
-
     private void checkNumberOperand(Token operator, Object operand) {
-        if (operand instanceof Double) return;
+        if (operand instanceof Double)
+            return;
         throw new RuntimeError(operator, "Operand must be a number.");
     }
 
     private void checkNumberOperands(Token operator, Object left, Object right) {
-        if (left instanceof Double && right instanceof Double) return;
+        if (left instanceof Double && right instanceof Double)
+            return;
         throw new RuntimeError(operator, "Operands must be numbers.");
+    }
+
+    @Override
+    public Void visitPrintStmt(Stmt.Print stmt) {
+        Object val = evaluate(stmt.expression);
+        System.out.println(stringify(val));
+        return null;
+    }
+
+    @Override
+    public Void visitExpressionStmt(Stmt.Expression stmt) {
+        evaluate(stmt.expression);
+        return null;
     }
 
 }
