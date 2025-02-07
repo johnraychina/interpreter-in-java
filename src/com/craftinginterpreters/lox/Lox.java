@@ -69,7 +69,7 @@ public class Lox {
             run(line);
 
             // If the user makes a mistake, it shouldn’t kill their entire session.
-            hadError = true;
+            hadError = false;
         }
     }
 

@@ -6,7 +6,6 @@ import com.craftinginterpreters.lox.Expr.Binary;
 import com.craftinginterpreters.lox.Expr.Grouping;
 import com.craftinginterpreters.lox.Expr.Literal;
 import com.craftinginterpreters.lox.Expr.Unary;
-import com.craftinginterpreters.lox.Expr.Visitor;
 
 public class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
 
@@ -36,6 +35,10 @@ public class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
             return text;
         }
 
+        if (object instanceof Boolean) {
+            return ((Boolean) object) ? "true" : "false";
+        }
+
         return object.toString();
     }
 
@@ -44,8 +47,8 @@ public class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
         return evaluate(expr.expression);
     }
 
-    private Object evaluate(Stmt stmt) {
-        return stmt.accept(this);
+    private Object evaluate(Expr expr) {
+        return expr.accept(this);
     }
 
     @Override
@@ -108,7 +111,6 @@ public class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
                     return (String) left + (String) right;
                 }
                 throw new RuntimeError(expr.operator, "Operands must be two numbers or two strings.");
-                break;
             case SLASH:
                 checkNumberOperands(expr.operator, left, right);
                 return (double) left / (double) right;
