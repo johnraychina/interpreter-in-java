@@ -22,7 +22,11 @@ import java.util.List;
 // exprStmt       → expression ";" ;
 // printStmt      → "print" expression ";" ;
 //
-// expression     → equality ;
+//// expression     → equality ;
+// expression     → assignment ;
+// assignment     → IDENTIFIER "=" assignment
+//                | equality ;
+//
 // equality       → comparison ( ( "!=" | "==" ) comparison )* ;
 // comparison     → term ( ( ">" | ">=" | "<" | "<=" ) term )* ;
 // term           → factor ( ( "-" | "+" ) factor )* ;
@@ -101,7 +105,47 @@ public class Parser {
     }
 
     private Expr expression() {
-        return equality();
+        // return equality();
+
+        // We want the syntax tree to reflect that an l-value isn’t evaluated like a normal expression. 
+        // That’s why the Expr.Assign node has a Token for the left-hand side, not an Expr. 
+        // The problem is that the parser doesn’t know it’s parsing an l-value until it hits the =. 
+        // In a complex l-value, that may occur many tokens later.
+        // makeList().head.next = node;
+        // We have only a single token of lookahead, so what do we do? 
+        return assignment();
+    }
+
+    private Expr assignment() {
+
+        // expr: makeList().head.next
+        Expr expr = equality();
+
+        if (match(EQUAL)) {
+            Token equals = previous();
+
+            // One slight difference from binary operators is that we don’t loop to build up a sequence of the same operator. 
+            // Since assignment is right-associative, we instead recursively call assignment() to parse the right-hand side.
+            Expr value = assignment();
+            
+            // The trick is that right before we create the assignment expression node, 
+            // we look at the left-hand side expression and figure out what kind of assignment target it is. 
+            // We convert the r-value expression node into an l-value representation.
+            // This conversion works because it turns out that every valid assignment target happens to also be valid syntax as a normal expression. 
+            // This means we can parse the left-hand side as if it were an expression 
+            // and then after the fact produce a syntax tree that turns it into an assignment target. 
+            // If the left-hand side expression isn’t a valid assignment target, we fail with a syntax error. 
+            // That ensures we report an error on code like this: a + b = c;
+            if (expr instanceof Expr.Variable v) {
+                Token name = v.name;
+                return new Expr.Assign(name, value);
+            }
+
+            // We report an error if the left-hand side isn’t a valid assignment target, 
+            // but we don’t throw it because the parser isn’t in a confused state where we need to go into panic mode and synchronize.
+            error(equals, "Invalid assignment target."); 
+        }
+        return expr;
     }
 
     private Expr equality() {
