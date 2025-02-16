@@ -1,13 +1,27 @@
 package com.craftinginterpreters.lox;
 
+import static com.craftinginterpreters.lox.TokenType.*;
 import java.util.ArrayList;
 import java.util.List;
-import static com.craftinginterpreters.lox.TokenType.*;
 
 // top-down operator precedence parsing
 // the most top level has the lowest precedence
 // the most bottom level has the highest precedence
-// grammar:
+////program        → statement* EOF ;
+//
+// program        → declaration* EOF ;
+//
+// declaration    → varDecl
+//                | statement ;
+//
+// varDecl        → "var" IDENTIFIER ( "=" expression )? ";" ;
+// 
+// statement      → exprStmt
+//                | printStmt ;
+
+// exprStmt       → expression ";" ;
+// printStmt      → "print" expression ";" ;
+//
 // expression     → equality ;
 // equality       → comparison ( ( "!=" | "==" ) comparison )* ;
 // comparison     → term ( ( ">" | ">=" | "<" | "<=" ) term )* ;
@@ -16,15 +30,9 @@ import static com.craftinginterpreters.lox.TokenType.*;
 // unary          → ( "!" | "-" ) unary
 //                | primary ;
 // primary        → NUMBER | STRING | "true" | "false" | "nil"
-//                | "(" expression ")" ;
+//                | "(" expression ")"
+//                | IDENTIFIER ;
 
-// program        → statement* EOF ;
-
-// statement      → exprStmt
-//                | printStmt ;
-
-// exprStmt       → expression ";" ;
-// printStmt      → "print" expression ";" ;
 
 public class Parser {
 
@@ -41,10 +49,36 @@ public class Parser {
     List<Stmt> parse() {
         List<Stmt> statements = new ArrayList<>();
         while (!isAtEnd()) {
-            statements.add(statement());
+            statements.add(declaration());
         }
 
         return statements;
+    }
+
+    private Stmt declaration() {
+        try {
+
+            if (match(VAR)) {
+                return varDeclaration();
+            }
+            return statement();
+
+        } catch (Exception e) {
+            synchronize();
+            return null;
+        }
+    }
+
+    private Stmt varDeclaration() {
+        Token name = consume(IDENTIFIER, "Expect variable name.");
+
+        Expr initializer = null;
+        if (match(EQUAL)) {
+            initializer = expression();
+        }
+
+        consume(SEMICOLON, "Expect ';' after variable declaration.");
+        return new Stmt.Var(name, initializer);
     }
 
     private Stmt statement() {
@@ -96,8 +130,9 @@ public class Parser {
     }
 
     private boolean check(TokenType type) {
-        if (isAtEnd())
+        if (isAtEnd()) {
             return false;
+        }
         return peek().type == type;
     }
 
@@ -114,8 +149,9 @@ public class Parser {
     }
 
     private Token advance() {
-        if (!isAtEnd())
+        if (!isAtEnd()) {
             current++;
+        }
         return previous();
     }
 
@@ -168,15 +204,22 @@ public class Parser {
 
     private Expr primary() {
         // the highest level of precedence, primary expressions
-        if (match(FALSE))
+        if (match(FALSE)) {
             return new Expr.Literal(false);
-        if (match(TRUE))
+        }
+        if (match(TRUE)) {
             return new Expr.Literal(true);
-        if (match(NIL))
+        }
+        if (match(NIL)) {
             return new Expr.Literal(null);
+        }
 
         if (match(STRING, NUMBER)) {
             return new Expr.Literal(previous().literal);
+        }
+
+        if (match(IDENTIFIER)) {
+            return new Expr.Variable(previous());
         }
 
         if (match(LEFT_PAREN)) {
@@ -188,8 +231,9 @@ public class Parser {
     }
 
     private Token consume(TokenType type, String message) {
-        if (check(type))
+        if (check(type)) {
             return advance();
+        }
         throw error(peek(), message);
     }
 
@@ -203,8 +247,9 @@ public class Parser {
 
         while (!isAtEnd()) {
 
-            if (previous().type == SEMICOLON)
+            if (previous().type == SEMICOLON) {
                 return;
+            }
 
             switch (peek().type) {
                 case CLASS:
