@@ -6,36 +6,23 @@
     "configurations": [
         {
             "type": "java",
-            "name": "Launch with Arguments Prompt",
+            "name": "GenerateAst",
             "request": "launch",
-            "mainClass": "com.craftinginterpreters.lox.Lox",
+            "mainClass": "com.craftinginterpreters.tool.GenerateAst",
             "args": "${command:SpecifyProgramArgs}"
-        },
-        {
-            "type": "java",
-            "name": "Current File",
-            "request": "launch",
-            "mainClass": "${file}"
         },
         {
             "type": "java",
             "name": "Lox",
             "request": "launch",
             "mainClass": "com.craftinginterpreters.lox.Lox",
-            "projectName": "interpreter-in-java_2f2230ea"
+            "args": "${command:SpecifyProgramArgs}"
         },
         {
             "type": "java",
             "name": "LoxTest",
             "request": "launch",
             "mainClass": "com.craftinginterpreters.lox.LoxTest",
-            "projectName": "interpreter-in-java_2f2230ea"
-        },
-        {
-            "type": "java",
-            "name": "GenerateAst",
-            "request": "launch",
-            "mainClass": "com.craftinginterpreters.tool.GenerateAst",
             "projectName": "interpreter-in-java_2f2230ea"
         }
     ]

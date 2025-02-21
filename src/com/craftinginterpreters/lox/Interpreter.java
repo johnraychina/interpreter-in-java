@@ -202,4 +202,38 @@ public class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
         return null;
     }
 
+    @Override
+    public Void visitIfStmt(Stmt.If stmt) {
+        if (isTrue(evaluate(stmt.condition))) {
+            execute(stmt.thenBranch);
+        } else if (stmt.elseBranch != null) {
+            execute(stmt.elseBranch);
+        }
+        return null;
+    }
+
+    @Override
+    public Object visitLogicalExpr(Expr.Logical expr) {
+        Object left = evaluate(expr.left);
+        if (expr.operator.type == TokenType.OR) {
+            if (isTruethy(left)) // short cut
+                return left;
+        } else {
+            if (!isTruethy(left)) // short cut
+                return left;
+        }
+
+
+        return evaluate(expr.right);
+    }
+
+    private boolean isTruethy(Object object) {
+        if (object == null)
+            return false;
+
+        if (object instanceof Boolean)
+            return (boolean) object;
+        
+        return true;
+    }
 }
