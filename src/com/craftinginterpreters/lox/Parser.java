@@ -2,6 +2,7 @@ package com.craftinginterpreters.lox;
 
 import static com.craftinginterpreters.lox.TokenType.*;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 // top-down operator precedence parsing
@@ -18,14 +19,22 @@ import java.util.List;
 // 
 // statement      → exprStmt
 //                | ifStmt
-//                | printStmt ;
-//                | block
+//                | printStmt
+//                | whileStmt
+//                | forStmt
+//                | block;
 
 // exprStmt       → expression ";" ;
 // printStmt      → "print" expression ";" ;
 // block          → "{" declaration* "}" ;
 // ifStmt         → "if" "(" expression ")" statement
 //                ( "else" statement )? ;
+// whileStmt      → "while" "(" expression ")" statement ;
+// forStmt        → "for" "(" ( varDecl | exprStmt | ";" )
+//                expression? ";"
+//                expression? ")"
+//                statement ;
+//
 //
 //// expression     → equality ;
 // expression     → assignment ;
@@ -101,11 +110,78 @@ public class Parser {
         if (match(PRINT)) {
             return printStatement();
         }
+        if (match(WHILE)) {
+            return whileStatement();
+        }
+        if (match(FOR)) {
+            return forStatement();
+        }
+
         if (match(LEFT_BRACE)) {
             return new Stmt.Block(block());
         }
 
         return expressionStatement();
+    }
+
+    private Stmt forStatement() {
+        consume(LEFT_PAREN, "Expect '(' after 'for'.");
+        Stmt initializer;
+        if (match(SEMICOLON)) {
+            initializer = null;
+        } else if (match(VAR)) {
+            initializer = varDeclaration();
+        } else {
+            initializer = expressionStatement();
+        }
+
+        Expr condition = null;
+        if (!check(SEMICOLON)) {
+            condition = expression();
+        }
+        consume(SEMICOLON, "Expect ';' after loop condition.");
+        
+        Expr increment = null;
+        if (!check(RIGHT_PAREN)) {
+            increment = expression();
+        }
+        consume(RIGHT_PAREN, "Expect ')' after for clauses.");
+        Stmt body = statement();
+
+        // We’ve parsed all of the various pieces of the for loop 
+        // and the resulting AST nodes are sitting in a handful of Java local variables. 
+        // This is where the desugaring comes in. 
+        // We take those and use them to synthesize syntax tree nodes that express the semantics of the for loop.
+        if (increment != null) {
+            body = new Stmt.Block(Arrays.asList(
+                body, 
+                new Stmt.Expression(increment))); // execute increment expression after body
+        }
+
+        // condition + while loop
+        if (condition == null) condition = new Expr.Literal(true);
+        body = new Stmt.While(condition, body);
+
+        // initializer
+        if (initializer != null) {
+            body = new Stmt.Block(Arrays.asList(initializer, body));
+        }
+
+
+        // That’s it. Our interpreter now supports C-style for loops 
+        // and we didn’t have to touch the Interpreter class at all. 
+        // Since we desugared to nodes the interpreter already knows how to visit, 
+        // there is no more work to do.
+
+        return body;
+    }
+
+    private Stmt whileStatement() {
+        consume(LEFT_PAREN, "Expect '(' after 'while'.");
+        Expr condition = expression();
+        consume(RIGHT_PAREN, "Expect ')' after 'while' condition.");
+        Stmt body = statement();
+        return new Stmt.While(condition, body);
     }
 
     private List<Stmt> block() {
@@ -118,7 +194,7 @@ public class Parser {
         consume(RIGHT_BRACE, "Expect '}' after block.");
         return statements;
     }
-    
+            
     private Stmt ifStatement() {
         consume(LEFT_PAREN, "Expect '(' after 'if'.");
         Expr condition = expression();
