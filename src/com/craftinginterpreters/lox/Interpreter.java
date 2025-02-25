@@ -288,4 +288,14 @@ public class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
       environment.define(stmt.name.lexeme, function);
       return null;
     }
+
+    public Void visitReturnStmt(Stmt.Return stmt) {
+        Object value = null;
+        if (stmt.value != null)
+            value = evaluate(stmt.value);
+    
+        // The interpreter can now throw a Return exception from the execute() method.
+        // todo: We can refactor executeBlock() to return in for loop instead of throwing a Return RuntimeException
+        throw new Return(value);
+    }
 }

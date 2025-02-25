@@ -35,6 +35,8 @@ import java.util.List;
 // ifStmt         → "if" "(" expression ")" statement
 //                ( "else" statement )? ;
 //
+// returnStmt     → "return" expression? ";" ;
+// 
 //// expression     → equality ;
 // expression     → assignment ;
 //// assignment     → IDENTIFIER "=" assignment
@@ -145,8 +147,22 @@ public class Parser {
         if (match(LEFT_BRACE)) {
             return new Stmt.Block(block());
         }
+        if (match(RETURN)) {
+            return returnStatement();
+        }
 
         return expressionStatement();
+    }
+
+    private Stmt returnStatement() {
+        // returnStmt     → "return" expression? ";" ;
+        Token keyword = previous();
+        Expr value = null;
+        if (!check(SEMICOLON)) {
+            value = expression();
+        }
+        consume(SEMICOLON, "Expect ';' after return value.");
+        return new Stmt.Return(keyword, value);
     }
 
     private List<Stmt> block() {

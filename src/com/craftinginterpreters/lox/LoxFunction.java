@@ -26,13 +26,17 @@ public class LoxFunction implements LoxCallable {
             environment.define(declaration.params.get(i).lexeme, arguments.get(i));
         }
 
-        interpreter.executeBlock(this.declaration.body, environment);
+        try {
+            interpreter.executeBlock(this.declaration.body, environment);
+        } catch (Return returnValue) {
+            return returnValue.value;
+        }
         return null;
     }
 
     @Override
     public String toString() {
-      return "<fn " + declaration.name.lexeme + ">";
+        return "<fn " + declaration.name.lexeme + ">";
     }
 
 }
