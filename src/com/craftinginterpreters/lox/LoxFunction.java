@@ -7,9 +7,12 @@ public class LoxFunction implements LoxCallable {
     // The function’s declaration statement.
     private Stmt.Function declaration;
 
+    private final Environment closure;
+
     // function execution object
-    public LoxFunction(Stmt.Function declaration) {
+    public LoxFunction(Stmt.Function declaration, Environment closure) {
         this.declaration = declaration;
+        this.closure = closure;
     }
 
     @Override
@@ -20,7 +23,7 @@ public class LoxFunction implements LoxCallable {
     @Override
     public Object call(Interpreter interpreter, List<Object> arguments) {
 
-        Environment environment = new Environment(interpreter.globals);
+        Environment environment = new Environment(closure); // reference parent env
         for (int i = 0; i < declaration.params.size(); i++) {
             // bind the function’s parameters to the arguments passed in.
             environment.define(declaration.params.get(i).lexeme, arguments.get(i));
