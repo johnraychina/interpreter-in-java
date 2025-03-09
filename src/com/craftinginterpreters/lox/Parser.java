@@ -13,9 +13,17 @@ import java.util.List;
 // program        → declaration* EOF ;
 //
 // declaration    → varDecl
+//                | funDecl
 //                | statement ;
 //
 // varDecl        → "var" IDENTIFIER ( "=" expression )? ";" ;
+// 
+// funDecl        → "fun" function ;
+// function       → IDENTIFIER "(" parameters? ")" block ;
+//
+// # function parameters are just similar to arguments rule, 
+// # except that each parameter is an identifier, not an expression. 
+// parameters     → IDENTIFIER ( "," IDENTIFIER )* ;
 // 
 // statement      → exprStmt
 //                | ifStmt
@@ -50,8 +58,11 @@ import java.util.List;
 // comparison     → term ( ( ">" | ">=" | "<" | "<=" ) term )* ;
 // term           → factor ( ( "-" | "+" ) factor )* ;
 // factor         → unary ( ( "/" | "*" ) unary )* ;
-// unary          → ( "!" | "-" ) unary
-//                | primary ;
+// unary          → ( "!" | "-" ) unary | call;
+// call           → primary ( "(" arguments? ")" )* ;
+// 
+// arguments      → expression ( "," expression )* ;
+//
 // primary        → NUMBER | STRING | "true" | "false" | "nil"
 //                | "(" expression ")"
 //                | IDENTIFIER ;
@@ -80,6 +91,9 @@ public class Parser {
     private Stmt declaration() {
         try {
 
+            if (match(FUN)) {
+                return function("function");
+            }
             if (match(VAR)) {
                 return varDeclaration();
             }
@@ -89,6 +103,33 @@ public class Parser {
             synchronize();
             return null;
         }
+    }
+
+    private Stmt function(String kind) {
+        consume(IDENTIFIER, "Expect " + kind + " name.");
+        Token name = previous();
+        consume(LEFT_PAREN, "Expect '(' after function name.");
+        List<Token> parameters = new ArrayList<>();
+
+        if (!check(RIGHT_PAREN)) {
+            do {
+                if (parameters.size() >= 255) {
+                    error(peek(), "Can't have more than 255 parameters.");
+                }
+
+                parameters.add(
+                        consume(IDENTIFIER, "Expect parameter name."));
+            } while (match(COMMA));
+        }
+
+        consume(RIGHT_PAREN, "Expect ')' after parameters.");
+
+        // Consuming LEFT_BRACE here lets us report a more precise error message if the { isn’t
+        // found since we know it’s in the context of a function declaration.
+        consume(LEFT_BRACE, "Expect '{' before " + kind + " body.");
+        List<Stmt> body = block();
+
+        return new Stmt.Function(name, parameters, body);
     }
 
     private Stmt varDeclaration() {
@@ -119,6 +160,9 @@ public class Parser {
 
         if (match(LEFT_BRACE)) {
             return new Stmt.Block(block());
+        }
+        if (match(RETURN)) {
+            return returnStatement();
         }
 
         return expressionStatement();
@@ -184,17 +228,28 @@ public class Parser {
         return new Stmt.While(condition, body);
     }
 
+    private Stmt returnStatement() {
+        // returnStmt     → "return" expression? ";" ;
+        Token keyword = previous();
+        Expr value = null;
+        if (!check(SEMICOLON)) {
+            value = expression();
+        }
+        consume(SEMICOLON, "Expect ';' after return value.");
+        return new Stmt.Return(keyword, value);
+    }
+
     private List<Stmt> block() {
         List<Stmt> statements = new ArrayList<>();
 
         while (!check(RIGHT_BRACE) && !isAtEnd()) {
-          statements.add(declaration());
+            statements.add(declaration());
         }
-    
+
         consume(RIGHT_BRACE, "Expect '}' after block.");
         return statements;
     }
-            
+        
     private Stmt ifStatement() {
         consume(LEFT_PAREN, "Expect '(' after 'if'.");
         Expr condition = expression();
@@ -253,7 +308,7 @@ public class Parser {
             Expr right = equality();
             expr = new Expr.Logical(expr, operator, right);
         }
-        
+
         return expr;
     }
 
@@ -393,7 +448,40 @@ public class Parser {
             Expr right = unary();
             return new Expr.Unary(operator, right);
         }
-        return primary();
+        // return primary();
+        return call();
+    }
+
+    private Expr call() {
+        Expr expr = primary();
+        while (true) {
+            if (match(LEFT_PAREN)) {
+                expr = finishCall(expr);
+            } else {
+                break;
+            }
+        }
+        return expr;
+    }
+
+    private Expr finishCall(Expr callee) {
+
+        // if arguement list not empty, collect them
+        List<Expr> arguments = new ArrayList<>();
+        if (!check(RIGHT_PAREN)) {
+            do {
+                if (arguments.size() >= 255) {
+                    error(peek(), "Can't have more than 255 arguments.");
+                }
+                arguments.add(expression());
+            } while (match(COMMA));
+        }
+
+        // we don't ignore paren here, pass it to Expr.Call to report wrong argument
+        // position.
+        Token paren = consume(RIGHT_PAREN, "Expect ')' after arguments.");
+
+        return new Expr.Call(callee, paren, arguments);
     }
 
     private Expr primary() {
