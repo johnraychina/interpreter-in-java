@@ -124,7 +124,8 @@ public class Parser {
 
         consume(RIGHT_PAREN, "Expect ')' after parameters.");
 
-        // Consuming LEFT_BRACE here lets us report a more precise error message if the { isn’t
+        // Consuming LEFT_BRACE here lets us report a more precise error message if the
+        // { isn’t
         // found since we know it’s in the context of a function declaration.
         consume(LEFT_BRACE, "Expect '{' before " + kind + " body.");
         List<Stmt> body = block();
@@ -184,7 +185,7 @@ public class Parser {
             condition = expression();
         }
         consume(SEMICOLON, "Expect ';' after loop condition.");
-        
+
         Expr increment = null;
         if (!check(RIGHT_PAREN)) {
             increment = expression();
@@ -192,18 +193,20 @@ public class Parser {
         consume(RIGHT_PAREN, "Expect ')' after for clauses.");
         Stmt body = statement();
 
-        // We’ve parsed all of the various pieces of the for loop 
-        // and the resulting AST nodes are sitting in a handful of Java local variables. 
-        // This is where the desugaring comes in. 
-        // We take those and use them to synthesize syntax tree nodes that express the semantics of the for loop.
+        // We’ve parsed all of the various pieces of the for loop
+        // and the resulting AST nodes are sitting in a handful of Java local variables.
+        // This is where the desugaring comes in.
+        // We take those and use them to synthesize syntax tree nodes that express the
+        // semantics of the for loop.
         if (increment != null) {
             body = new Stmt.Block(Arrays.asList(
-                body, 
-                new Stmt.Expression(increment))); // execute increment expression after body
+                    body,
+                    new Stmt.Expression(increment))); // execute increment expression after body
         }
 
         // condition + while loop
-        if (condition == null) condition = new Expr.Literal(true);
+        if (condition == null)
+            condition = new Expr.Literal(true);
         body = new Stmt.While(condition, body);
 
         // initializer
@@ -211,10 +214,9 @@ public class Parser {
             body = new Stmt.Block(Arrays.asList(initializer, body));
         }
 
-
-        // That’s it. Our interpreter now supports C-style for loops 
-        // and we didn’t have to touch the Interpreter class at all. 
-        // Since we desugared to nodes the interpreter already knows how to visit, 
+        // That’s it. Our interpreter now supports C-style for loops
+        // and we didn’t have to touch the Interpreter class at all.
+        // Since we desugared to nodes the interpreter already knows how to visit,
         // there is no more work to do.
 
         return body;
@@ -229,7 +231,7 @@ public class Parser {
     }
 
     private Stmt returnStatement() {
-        // returnStmt     → "return" expression? ";" ;
+        // returnStmt → "return" expression? ";" ;
         Token keyword = previous();
         Expr value = null;
         if (!check(SEMICOLON)) {
@@ -249,7 +251,7 @@ public class Parser {
         consume(RIGHT_BRACE, "Expect '}' after block.");
         return statements;
     }
-        
+
     private Stmt ifStatement() {
         consume(LEFT_PAREN, "Expect '(' after 'if'.");
         Expr condition = expression();

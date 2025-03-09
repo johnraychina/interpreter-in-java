@@ -229,7 +229,7 @@ public class Interpreter implements Expr.Visitor<Object>, Stmt.Visitor<Void> {
     }
 
     public Void visitWhileStmt(Stmt.While stmt) {
-        while(isTruethy(evaluate(stmt.condition))) {
+        while (isTruethy(evaluate(stmt.condition))) {
             execute(stmt.body);
         }
         return null;

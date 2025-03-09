@@ -15,7 +15,6 @@ public class Lox {
     static boolean hadRuntimeError = false;
     private static final Interpreter interpreter = new Interpreter();
 
-
     public static void main(String[] args) throws IOException {
 
         if (args.length > 1) {
@@ -28,44 +27,46 @@ public class Lox {
         }
     }
 
-
     public static void run(String line) {
-//        new Scanner(line).tokens().forEach(System.out::println);
+        // new Scanner(line).tokens().forEach(System.out::println);
         Scanner scanner = new Scanner(line);
         List<Token> tokens = scanner.scanTokens();
 
         // For now, just print the tokens.
         // for (Token token : tokens) {
-        //     System.out.println(token);
+        // System.out.println(token);
         // }
 
         // try to parse tokens into AST Expr
         Parser parser = new Parser(tokens);
         List<Stmt> statements = parser.parse();
-        
+
         // stop on syntax error
-        if (hadError) return;
-        
+        if (hadError)
+            return;
+
         interpreter.interpret(statements);
     }
-
 
     public static void runFile(String path) throws IOException {
         byte[] bytes = Files.readAllBytes(Path.of(path));
         run(new String(bytes, Charset.defaultCharset()));
 
-        if (hadError) System.exit(65);
-        if (hadRuntimeError) System.exit(70);
+        if (hadError)
+            System.exit(65);
+        if (hadRuntimeError)
+            System.exit(70);
     }
 
     public static void runPrompt() throws IOException {
 
         BufferedReader reader = new BufferedReader(new InputStreamReader(System.in));
 
-        for (; ; ) {
+        for (;;) {
             System.out.print("> ");
             String line = reader.readLine();
-            if (line == null) break;
+            if (line == null)
+                break;
             run(line);
 
             // If the user makes a mistake, it shouldn’t kill their entire session.
@@ -91,11 +92,11 @@ public class Lox {
 
     static void error(Token token, String message) {
         if (token.type == TokenType.EOF) {
-          report(token.line, " at end", message);
+            report(token.line, " at end", message);
         } else {
-          report(token.line, " at '" + token.lexeme + "'", message);
+            report(token.line, " at '" + token.lexeme + "'", message);
         }
-      }
+    }
 
     private static void report(int line, String where, String message) {
         System.err.println("[line " + line + "] Error" + where + ": " + message);
@@ -104,8 +105,7 @@ public class Lox {
 
     static void runtimeError(RuntimeError error) {
         System.err.println(error.getMessage() +
-            "\n[line " + error.token.line + "]");
+                "\n[line " + error.token.line + "]");
         hadRuntimeError = true;
-      }
+    }
 }
-
